@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Based Real-Time Crop Image Analytics for PMFBY</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        @keyframes scanLine {
+            0% { top: 0%; opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0.8; }
+        }
+        .animate-scan {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #22c55e, #eab308, #22c55e, transparent);
+            box-shadow: 0 0 15px #22c55e;
+            animation: scanLine 2s ease-in-out infinite alternate;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- HEADER / TOP NAVIGATION -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-tr from-green-700 to-emerald-500 text-white p-2.5 rounded-xl shadow-md">
+                        <i class="fa-solid fa-wheat-awn-circle-exclamation text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-0.5 rounded border border-orange-200">PMFBY Portal</span>
+                            <span class="text-xs text-slate-500 font-medium hidden sm:inline">Govt. of India Initiative</span>
+                        </div>
+                        <h1 class="text-lg font-bold text-slate-900 leading-tight">AI Real-Time Crop Image Analytics</h1>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="flex flex-col items-end">
+                        <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">User Role</label>
+                        <select id="roleSelect" class="text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1">
+                            <option value="surveyor">Field Surveyor (Agri-Inspector)</option>
+                            <option value="farmer">Farmer Portal</option>
+                            <option value="admin">PMFBY Claim Desk Admin</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT WRAPPER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- NOTICE BANNER -->
+        <div class="bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <span class="bg-emerald-500/20 text-emerald-300 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-emerald-400/30">Mini-Project Prototype</span>
+                    <h2 class="text-2xl font-extrabold mt-2">Automated Damage Assessment & Claim Verification</h2>
+                    <p class="text-emerald-100 text-sm mt-1 max-w-2xl">
+                        Leveraging computer vision models (YOLO / ResNet CNN) for real-time crop disease detection, flood/drought damage severity calculation, and direct PMFBY claim payout estimation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN INTERACTIVE CORE -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT COLUMN: IMAGE INPUT & AI SCANNER -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 class="font-bold text-slate-800 flex items-center space-x-2">
+                            <i class="fa-solid fa-camera text-emerald-600"></i>
+                            <span>1. Image Input & Source</span>
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Geo-tagged Sync</span>
+                    </div>
+
+                    <!-- Preset Samples -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-2">Select Pre-loaded PMFBY Inspection Test Samples:</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="loadSample('paddy')" class="p-2 rounded-xl border border-slate-200 text-left hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                                <p class="text-xs font-bold text-slate-800">🌾 Rice/Paddy Blast</p>
+                                <p class="text-[10px] text-slate-500">Disease Assessment</p>
+                            </button>
+                            <button onclick="loadSample('cotton')" class="p-2 rounded-xl border border-slate-200 text-left hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                                <p class="text-xs font-bold text-slate-800">🌧️ Cotton Flooding</p>
+                                <p class="text-[10px] text-slate-500">Submerged Crop Damage</p>
+                            </button>
+                            <button onclick="loadSample('wheat')" class="p-2 rounded-xl border border-slate-200 text-left hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                                <p class="text-xs font-bold text-slate-800">🌿 Healthy Wheat</p>
+                                <p class="text-[10px] text-slate-500">Baseline / Zero Claim</p>
+                            </button>
+                            <button onclick="loadSample('maize')" class="p-2 rounded-xl border border-slate-200 text-left hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                                <p class="text-xs font-bold text-slate-800">☀️ Maize Drought</p>
+                                <p class="text-[10px] text-slate-500">Thermal Stress/Wilting</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Upload Zone -->
+                    <div class="relative border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-1"></i>
+                        <p class="text-xs font-semibold text-slate-700">Click or drag crop image to upload</p>
+                        <p class="text-[10px] text-slate-400">JPG, PNG (Auto EXIF Lat/Long extraction)</p>
+                    </div>
+
+                    <!-- FIELD PARAMETERS INPUT -->
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Insured Area (Hectares)</label>
+                            <input type="number" id="plotArea" value="2.5" step="0.1" min="0.1" onchange="recalculateClaim()"
+                                class="w-full text-xs font-semibold border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Sum Insured (₹/Ha)</label>
+                            <input type="number" id="sumInsured" value="52000" step="1000" onchange="recalculateClaim()"
+                                class="w-full text-xs font-semibold border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVE IMAGE VIEW & SCANNER -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                            <i class="fa-solid fa-microscope text-emerald-600"></i>
+                            <span>2. Image Feature Segmentation View</span>
+                        </h3>
+                        <span id="aiStatusBadge" class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full border border-slate-200">
+                            Ready
+                        </span>
+                    </div>
+
+                    <div class="relative w-full h-64 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800">
+                        <img id="previewImage" src="https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80" alt="Crop Preview" class="w-full h-full object-cover">
+
+                        <div id="scannerOverlay" class="hidden absolute inset-0 bg-emerald-950/20 backdrop-blur-[1px]">
+                            <div class="animate-scan"></div>
+                        </div>
+
+                        <div class="absolute bottom-2 left-2 right-2 bg-slate-900/70 backdrop-blur-sm p-2 rounded-lg text-white text-[10px] flex justify-between font-mono border border-white/10">
+                            <div>NDVI: <span id="hudNdvi" class="text-emerald-400 font-bold">0.68</span></div>
+                            <div>Inference: <span class="text-yellow-400">18ms</span></div>
+                        </div>
+                    </div>
+
+                    <button id="runAiBtn" onclick="runAiAnalytics()" class="w-full bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white font-bold py-3 rounded-xl text-sm shadow-md transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Run AI Damage & Crop Health Analysis</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: ANALYTICS DIAGNOSIS & CLAIM OUTPUT -->
+            <div class="lg:col-span-7 space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <div class="p-1.5 bg-emerald-100 text-emerald-800 rounded-lg">
+                                <i class="fa-solid fa-file-waveform"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-900">3. AI Diagnosis & Severity Assessment</h3>
+                        </div>
+                        <span class="text-xs text-slate-500 font-medium">Confidence Score: <strong id="confidenceScore" class="text-slate-800">96.4%</strong></span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] uppercase font-bold text-slate-400">Identified Crop</span>
+                            <p id="cropType" class="text-sm font-extrabold text-slate-800 mt-0.5">Paddy (Rice)</p>
+                            <span id="cropStage" class="text-[10px] text-slate-500">Flowering Stage</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] uppercase font-bold text-slate-400">Detected Condition</span>
+                            <p id="detectedState" class="text-sm font-extrabold text-red-600 mt-0.5">Paddy Blast Disease</p>
+                            <span id="conditionCategory" class="text-[10px] text-red-500 font-semibold">Fungal Pathogen</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] uppercase font-bold text-slate-400">Calculated Severity</span>
+                            <p id="severityValue" class="text-sm font-extrabold text-amber-600 mt-0.5">42.5%</p>
+                            <span class="text-[10px] text-amber-700 font-medium">Moderate Damage</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] uppercase font-bold text-slate-400">Affected Canopy Area</span>
+                            <p id="affectedAreaValue" class="text-sm font-extrabold text-slate-800 mt-0.5">1.06 Hectares</p>
+                            <span class="text-[10px] text-slate-500">of 2.50 Ha total</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-semibold text-slate-700">
+                            <span>Loss Severity Scale (PMFBY Threshold)</span>
+                            <span id="severityPercentText">42.5%</span>
+                        </div>
+                        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex">
+                            <div id="severityBar" class="h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 transition-all duration-700 rounded-full" style="width: 42.5%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- FINANCIAL ESTIMATION BOX -->
+                    <div class="bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100/60 rounded-xl p-4 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="space-y-1 text-center sm:text-left">
+                            <span class="text-xs font-bold text-emerald-800 uppercase tracking-wide">Estimated PMFBY Claim Compensation</span>
+                            <div class="flex items-baseline space-x-2">
+                                <span class="text-2xl sm:text-3xl font-black text-emerald-900" id="claimAmountDisplay">₹ 55,250</span>
+                                <span class="text-xs text-emerald-700 font-medium">(Pro-rata calculated)</span>
+                            </div>
+                            <p class="text-[11px] text-emerald-700">Formula: Insured Area × Sum Insured × Verified Severity Coefficient</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-sm">
+                                <i class="fa-solid fa-circle-check mr-1.5"></i> Eligible for Direct Claim
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GEO-TAGGING & METADATA PANEL -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                            <i class="fa-solid fa-location-dot text-rose-500"></i>
+                            <span>4. Geo-Tagging & Audit Metadata</span>
+                        </h3>
+                        <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            <i class="fa-solid fa-lock mr-1"></i> Blockchain Immutable Timestamp
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block text-[10px] uppercase font-bold">GPS Coordinates</span>
+                            <span id="geoCoords" class="font-mono font-semibold text-slate-800">17.3850° N, 78.4867° E</span>
+                            <span class="block text-[10px] text-slate-500 mt-0.5">Accuracy: ±2.4 meters</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block text-[10px] uppercase font-bold">Location & Tehsil</span>
+                            <span id="geoVillage" class="font-semibold text-slate-800">Village: Medak, Telangana</span>
+                            <span class="block text-[10px] text-slate-500 mt-0.5">Plot No: SY-402/A</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                            <span class="text-slate-400 block text-[10px] uppercase font-bold">Farmer Policy ID</span>
+                            <span id="farmerPolicyId" class="font-mono font-semibold text-slate-800">PMFBY-2026-88491</span>
+                            <span class="block text-[10px] text-slate-500 mt-0.5">Aadhaar Linked</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+            <h3 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">District Analytics & Claim Trends</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2">Crop Damage Causes</h4>
+                    <div class="h-44 relative"><canvas id="chartDamageType"></canvas></div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2">Monthly Claim Submissions (₹ Lakhs)</h4>
+                    <div class="h-44 relative"><canvas id="chartClaimMonthly"></canvas></div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2">Settlement Time Reduction (Days)</h4>
+                    <div class="h-44 relative"><canvas id="chartEfficiency"></canvas></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const samples = {
+            paddy: {
+                img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80',
+                crop: 'Paddy (Rice)', stage: 'Flowering Stage', condition: 'Paddy Blast Disease',
+                category: 'Fungal Pathogen', severity: 42.5, coords: '17.3850° N, 78.4867° E'
+            },
+            cotton: {
+                img: 'https://images.unsplash.com/photo-1605000797499-95a51c5269ae?auto=format&fit=crop&w=600&q=80',
+                crop: 'Cotton', stage: 'Boll Development', condition: 'Submerged Crop Flooding',
+                category: 'Severe Waterlogging', severity: 68.0, coords: '19.9615° N, 79.2961° E'
+            },
+            wheat: {
+                img: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=600&q=80',
+                crop: 'Wheat', stage: 'Tillering Stage', condition: 'Healthy Crop (No Disease)',
+                category: 'Optimal Foliage', severity: 0.0, coords: '30.9010° N, 75.8573° E'
+            },
+            maize: {
+                img: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&w=600&q=80',
+                crop: 'Maize (Corn)', stage: 'Vegetative Growth', condition: 'Drought / Moisture Stress',
+                category: 'Leaf Wilting & Scorching', severity: 55.0, coords: '15.3647° N, 75.1240° E'
+            }
+        };
+
+        let currentSeverity = 42.5;
+
+        function loadSample(key) {
+            const data = samples[key];
+            if (!data) return;
+            document.getElementById('previewImage').src = data.img;
+            document.getElementById('cropType').innerText = data.crop;
+            document.getElementById('cropStage').innerText = data.stage;
+            document.getElementById('detectedState').innerText = data.condition;
+            document.getElementById('conditionCategory').innerText = data.category;
+            document.getElementById('geoCoords').innerText = data.coords;
+            currentSeverity = data.severity;
+            updateMetrics();
+        }
+
+        function recalculateClaim() {
+            updateMetrics();
+        }
+
+        function updateMetrics() {
+            document.getElementById('severityValue').innerText = currentSeverity + '%';
+            document.getElementById('severityPercentText').innerText = currentSeverity + '%';
+            document.getElementById('severityBar').style.width = currentSeverity + '%';
+
+            const area = parseFloat(document.getElementById('plotArea').value) || 2.5;
+            const sumInsured = parseFloat(document.getElementById('sumInsured').value) || 52000;
+            const affected = (area * (currentSeverity / 100)).toFixed(2);
+            document.getElementById('affectedAreaValue').innerText = `${affected} Hectares`;
+
+            const payout = Math.round(area * sumInsured * (currentSeverity / 100));
+            document.getElementById('claimAmountDisplay').innerText = `₹ ${payout.toLocaleString('en-IN')}`;
+        }
+
+        function runAiAnalytics() {
+            const overlay = document.getElementById('scannerOverlay');
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                alert("AI Scan Complete: Features segmented and metrics updated.");
+            }, 1200);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImage').src = e.target.result;
+                    currentSeverity = 36.8;
+                    document.getElementById('cropType').innerText = "Uploaded Crop";
+                    document.getElementById('detectedState').innerText = "Leaf Spot Detected";
+                    updateMetrics();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        window.onload = function() {
+            new Chart(document.getElementById('chartDamageType').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Paddy Blast', 'Flooding', 'Drought', 'Leaf Rust'],
+                    datasets: [{
+                        data: [42, 28, 18, 12],
+                        backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            new Chart(document.getElementById('chartClaimMonthly').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+                    datasets: [{
+                        label: 'Claims (₹ Lakhs)',
+                        data: [12.4, 28.6, 45.2, 38.0, 19.5],
+                        backgroundColor: '#10b981'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            new Chart(document.getElementById('chartEfficiency').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Traditional Survey', 'Drone Image AI', 'PMFBY System'],
+                    datasets: [{
+                        label: 'Days to Settle',
+                        data: [45, 12, 3],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        };
+    </script>
+</body>
+</html>
+
